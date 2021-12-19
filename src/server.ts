@@ -4,6 +4,9 @@ import express, { Express } from 'express';
 import morgan from 'morgan';
 import routes from './routes/posts';
 
+// Config file of MongoDB connection
+import './mongo';
+
 // Iniatializing express
 const app: Express = express();
 
@@ -14,8 +17,8 @@ app.use(express.urlencoded({ extended: false }));
 // Accepts JSON data
 app.use(express.json());
 
-// Routes
-app.use('/', routes);
+// Api routes
+app.use('/api/posts', routes);
 
 // Erroe handling
 app.use((req,res,next) => { 
@@ -23,11 +26,11 @@ app.use((req,res,next) => {
   return  res.status(404).json({
     message: error.message
   });
-})
+});
 
 // Server
 const httpServer = http.createServer(app);
 const PORT: any = process.env.PORT ?? 6060;
 httpServer.listen(PORT, () => {
   console.log(`Server runing on: http://localhost:${PORT}`);
-})
+});

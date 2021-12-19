@@ -1,7 +1,7 @@
 // This module will handle all the API logic
 import { Request, Response, NextFunction, json } from 'express';
-import axios, { AxiosResponse } from 'axios';
-import { addPostModel, getPostsModel, getOnePostModel } from '../models/posts'
+import PostModel from '../models/posts';
+
 
 interface Post {
   userId: Number,
@@ -13,67 +13,105 @@ interface Post {
 
 //Getting all posts
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
-  const results = await getPostsModel();
-  const posts = results;
-  res.status(200).json({
-    posts
-  })
+  try {
+    const posts = await PostModel.find({});
+    res.status(200).json(posts);
+  } catch(err) {
+    res.status(404).json({
+      error: err
+    });
+  }
 };
 
 // Getting a single post
 const getPost = async (req: Request, res: Response, next: NextFunction) => {
   // Get id of the post from the request params
-  const id: string = req.params.id;
-  const result = await getOnePostModel(id);
-  return res.status(200).json({
-    message: result
-  });
+  try {
+    const id: string = req.params.id;
+    const result = await PostModel.findById(id);
+    return res.status(200).json(result);
+  } catch(err) {
+    res.status(404).json({
+      error: "Post not found"
+    })
+  }
 };
 
 // Updating a post
-// const updatePost = async (req: Request, res: Response, next: NextFunction) => {
-//   // Get id of the post from the request params
-//   const id: string = req.params.id;
-//   // get the title/data to put from the request body
-//   const title: string = req.body.title;
-//   const body: string = req.body.body;
-//   // Update the post
-//   const response: AxiosResponse = await axios.put(`https://jsonplaceholder.typicode.com/posts/${id}`, {
-//     ...(title && { title }),
-//     ...(body && { body })
-//   });
+const updatePost = async (req: Request, res: Response, next: NextFunction) => {
+  // Get id of the post from the request params
+  const id: string = req.params.id;
+  // get the title/data to put from the request body
+  const title: string = req.body.title;
+  const body: string = req.body.body;
+  const newPostInfo = {
+    title,
+    body
+  }
+  if(!newPostInfo.title || !newPostInfo.body) {
+    res.status(400).json({
+      message: 'Missing the new post info'
+    })
+    return;
+  }
 
-//   return res.status(200).json({
-//     message: response.data
-//   });
-// };
+  try {
+    const newPost = await PostModel.findByIdAndUpdate(id, newPostInfo, { new: true });
+    res.status(201).json(newPost);
+  } catch(err) {
+    res.status(400).json({
+      error: err
+    })
+  }
+};
 
 // Deleting a post
-// const deletePost = async (req: Request, res: Response, next: NextFunction) => {
-//   // Get id of the post from the request params
-//   const id: string = req.params.id;
-//   // Delete the post
-//   const response: AxiosResponse = await axios.delete(`https://jsonplaceholder.typicode.com/posts/${id}`);
-//   return res.status(200).json({
-//     message: 'Post deleted successfully'
-//   });
-// };
+const deletePost = async (req: Request, res: Response, next: NextFunction) => {
+  // Get id of the post from the request params
+  const id: string = req.params.id;
+  // Delete the post
+  try {
+    const result = await PostModel.findByIdAndDelete(id);
+    return res.status(204).end();
+  } catch(err) {
+    res.status(400).json({
+      error: err
+    })
+  }
+};
 
 // Adding a post
 const addPost = async (req: Request, res: Response, next: NextFunction) => {
   const title: string = req.body.title;
   const body: string = req.body.body;
-  const result = await addPostModel(title, body);
-  res.status(200).json({
-    message: "Created Post successfully",
-    postId: result?._id
+  
+  if(!title || !body) {
+    res.status(400).json({
+      message: "Missing title or body of the post"
+    })
+    return;
+  }
+
+  const newPost = new PostModel({
+    title,
+    body
   })
+
+  try {
+    const savedNote = await newPost.save();
+    res.status(201).json(savedNote);
+  } catch(err) {
+    res.status(400).json({
+      error: err
+    })
+  }
+  
 };
 
 export default {
   getPosts,
   getPost,
-  //updatePost,
-  //deletePost,
+  updatePost,
+  deletePost,
   addPost
 }

@@ -1,39 +1,30 @@
-import { model, connect } from "mongoose";
-import { Post, postSchema } from '../schemas/post';
+import { model, Schema } from "mongoose";
 
+interface Post {
+  id: number,
+  title: string,
+  body: string
+};
+
+const postSchema = new Schema<Post>({
+  title: {
+    type: String,
+    required: true
+  },
+  body:{
+    type: String,
+    required: true
+  }
+});
+
+postSchema.set('toJSON', {
+  transform: (document, returnedObject): void => {
+    returnedObject.id = returnedObject._id;
+    delete returnedObject._id;
+    delete returnedObject.__v;
+  }
+})
 
 const PostModel = model<Post>('Post', postSchema);
 
-async function addPostModel(title: string, body: string) {
-  try {
-    await connect('mongodb://localhost:27017/posts');
-    const doc = new PostModel({
-      title,
-      body
-    });
-    await doc.save();
-    return doc
-
-  } catch(err) {
-    console.error(err);
-  }
- 
-}
-
-async function getPostsModel() {
-  await connect('mongodb://localhost:27017/posts');
-  const docs = await PostModel.find();
-  return docs;
-}
-
-async function getOnePostModel(id: string) {
-  await connect('mongodb://localhost:27017/posts');
-  const doc = await PostModel.findById(id);
-  return doc;
-}
-
-export {
-  addPostModel,
-  getPostsModel,
-  getOnePostModel
-}
+export default PostModel;
